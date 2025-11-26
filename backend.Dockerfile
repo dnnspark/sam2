@@ -31,9 +31,6 @@ COPY README.md .
 RUN pip install --upgrade pip setuptools
 RUN pip install -e ".[interactive-demo]"
 
-# https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/issues/69#issuecomment-1826764707
-RUN rm /opt/conda/bin/ffmpeg && ln -s /bin/ffmpeg /opt/conda/bin/ffmpeg
-
 # Make app directory. This directory will host all files required for the
 # backend and SAM 2 inference files.
 RUN mkdir ${APP_ROOT}
