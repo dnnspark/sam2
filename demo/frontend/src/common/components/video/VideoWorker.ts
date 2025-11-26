@@ -109,6 +109,9 @@ self.addEventListener(
         case 'deleteTracklet':
           await tracker?.deleteTracklet(event.data.trackletId);
           break;
+        case 'updateTrackletDynamic':
+          tracker?.setTrackletDynamic(event.data.trackletId, event.data.isDynamic);
+          break;        
         case 'closeSession':
           tracker?.closeSession();
           break;

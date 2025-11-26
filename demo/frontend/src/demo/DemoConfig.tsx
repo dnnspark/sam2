@@ -20,7 +20,7 @@ type EffectLayers = {
   highlight: keyof Effects;
 };
 
-export const DEMO_SHORT_NAME = 'SAM 2 Demo';
+export const DEMO_SHORT_NAME = 'SAM 2 + VGGT Demo';
 export const RESEARCH_BY_META_AI = 'By Meta FAIR';
 export const DEMO_FRIENDLY_NAME = 'Segment Anything 2 Demo';
 export const VIDEO_WATERMARK_TEXT = `Modified with ${DEMO_FRIENDLY_NAME}`;
