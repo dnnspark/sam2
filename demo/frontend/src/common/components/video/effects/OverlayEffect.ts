@@ -68,6 +68,7 @@ export default class OverlayEffect extends BaseGLEffect {
     invariant(gl !== null, 'WebGL2 context is required');
     invariant(program !== null, 'Not WebGL program found');
 
+    gl.viewport(0, 0, context.width, context.height);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 

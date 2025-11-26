@@ -82,15 +82,17 @@ export default abstract class BaseGLEffect extends AbstractEffect {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
+    gl.viewport(0, 0, context.width, context.height);
     gl.activeTexture(gl.TEXTURE0 + this._frameTextureUnit);
     gl.bindTexture(gl.TEXTURE_2D, this._frameTexture);
+
+    // Flip the bitmap on upload and use the ImageBitmap overload to avoid invalid
+    // TEX_IMAGE_2D calls that leave the texture incomplete.
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
       gl.RGBA,
-      context.frame.width,
-      context.frame.height,
-      0,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
       context.frame,
@@ -98,7 +100,6 @@ export default abstract class BaseGLEffect extends AbstractEffect {
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
     // Apply shader
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
