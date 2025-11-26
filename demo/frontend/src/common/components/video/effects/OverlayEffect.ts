@@ -116,13 +116,11 @@ export default class OverlayEffect extends BaseGLEffect {
     // Activate original frame texture
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this._frameTexture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
       gl.RGBA,
-      context.width,
-      context.height,
-      0,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
       context.frame,
@@ -155,11 +153,11 @@ export default class OverlayEffect extends BaseGLEffect {
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,
-        gl.LUMINANCE,
-        context.height,
+        gl.RED,
         context.width,
+        context.height,
         0,
-        gl.LUMINANCE,
+        gl.RED,
         gl.UNSIGNED_BYTE,
         maskData,
       );
