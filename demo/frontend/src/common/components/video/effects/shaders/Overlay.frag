@@ -22,13 +22,10 @@ uniform vec2 uSize;
 uniform int uNumMasks;
 uniform float uOpacity;
 uniform bool uBorder;
-uniform sampler2D uMaskTexture0;
-uniform sampler2D uMaskTexture1;
-uniform sampler2D uMaskTexture2;
+const int MAX_MASKS = 8;
 
-uniform vec4 uMaskColor0;
-uniform vec4 uMaskColor1;
-uniform vec4 uMaskColor2;
+uniform sampler2D uMaskTextures[MAX_MASKS];
+uniform vec4 uMaskColors[MAX_MASKS];
 
 uniform float uTime;
 uniform vec2 uClickPos;
@@ -74,92 +71,50 @@ vec2 calculateAdjustedTexCoord(vec2 vTexCoord, vec4 bbox, float aspectRatio) {
 }
 
 void main() {
-  vec4 color = texture(uSampler, vTexCoord);
-  vec4 color1 = uMaskColor0 / 255.0;
-  vec4 color2 = uMaskColor1 / 255.0;
-  vec4 color3 = uMaskColor2 / 255.0;
+  vec4 baseColor = texture(uSampler, vTexCoord);
   float saturationFactor = 0.7;
   float aspectRatio = uSize.y / uSize.x;
   vec2 tvTexCoord = vec2(vTexCoord.y, vTexCoord.x);
 
-  vec4 finalColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+  vec4 finalColor = vec4(baseColor.rgb, 1.0f);
   float totalMaskValue = 0.0f;
   vec4 edgeColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
   float numRipples = 1.75;
   float timeThreshold = 1.1; // can take any value from [0.0, 1.5]
   vec2 adjustedClickCoord =  calculateAdjustedTexCoord(vTexCoord, vec4(uClickPos, uClickPos + 0.1), aspectRatio);
 
-  if(uNumMasks > 0) {
-    float maskValue0 = texture(uMaskTexture0, tvTexCoord).r;
-    vec4 saturatedColor = lowerSaturation(color1, saturationFactor);
-    vec4 plainColor= vec4(vec3(saturatedColor).rgb, 1.0);
-    vec4 rippleColor = vec4(color1.rgb, 0.2);
-    
-    if (uActiveMask == 0 && uTime < timeThreshold) {
-      float dist = length(adjustedClickCoord);
-      float colorFactor = abs(sin((dist - uTime) * numRipples));
-      plainColor = vec4(mix(rippleColor, plainColor, colorFactor));
-    };
-    
-    if (uTime >= timeThreshold) {
-      plainColor= vec4(vec3(saturatedColor).rgb, 1.0);
+  for(int i = 0; i < MAX_MASKS; i++) {
+    if(i >= uNumMasks) {
+      break;
     }
-    finalColor += maskValue0 * plainColor;
-    totalMaskValue += maskValue0;
 
-    edgeColor = detectEdges(uMaskTexture0, 1.25, color1);
-  }
-  if(uNumMasks > 1) {
-    float maskValue1 = texture(uMaskTexture1, tvTexCoord).r;
-    vec4 saturatedColor = lowerSaturation(color2, saturationFactor);
-    vec4 plainColor= vec4(vec3(saturatedColor).rgb, 1.0);
-    vec4 rippleColor = vec4(color2.rgb, 0.2);
+    vec4 maskColor = uMaskColors[i] / 255.0;
+    float maskValue = texture(uMaskTextures[i], tvTexCoord).r;
+    vec4 saturatedColor = lowerSaturation(maskColor, saturationFactor);
+    vec4 plainColor = vec4(vec3(saturatedColor).rgb, 1.0);
+    vec4 rippleColor = vec4(maskColor.rgb, 0.2);
 
-    if (uActiveMask == 1 && uTime < timeThreshold) {
+    if (uActiveMask == i && uTime < timeThreshold) {
       float dist = length(adjustedClickCoord);
       float colorFactor = abs(sin((dist - uTime) * numRipples));
       plainColor = vec4(mix(rippleColor, plainColor, colorFactor));
     }
 
     if (uTime >= timeThreshold) {
-      plainColor= vec4(vec3(saturatedColor).rgb, 1.0);
+      plainColor = vec4(vec3(saturatedColor).rgb, 1.0);
     }
-    finalColor += maskValue1 * plainColor;
-    totalMaskValue += maskValue1;
+
+    finalColor += maskValue * plainColor;
+    totalMaskValue += maskValue;
 
     if(edgeColor.a <= 0.0f) {
-      edgeColor = detectEdges(uMaskTexture1, 1.25, color2);
-    }
-  }
-  if(uNumMasks > 2) {
-    float maskValue2 = texture(uMaskTexture2, tvTexCoord).r;
-    vec4 saturatedColor = lowerSaturation(color3, saturationFactor);
-    vec4 plainColor= vec4(vec3(saturatedColor).rgb, 1.0);
-    vec4 rippleColor = vec4(color3.rgb, 0.2);
-
-    if (uActiveMask == 2 && uTime < timeThreshold) {
-      float dist = length(adjustedClickCoord);
-      float colorFactor = abs(sin((dist - uTime) * numRipples));
-      plainColor = vec4(mix(rippleColor, plainColor, colorFactor));
-    }
-
-    if (uTime >= timeThreshold) {
-      plainColor= vec4(vec3(saturatedColor).rgb, 1.0);
-    }
-
-    finalColor += maskValue2 * plainColor;
-    totalMaskValue += maskValue2;
-
-    if(edgeColor.a <= 0.0f) {
-      edgeColor = detectEdges(uMaskTexture2, 1.25, color3);
+      edgeColor = detectEdges(uMaskTextures[i], 1.25, maskColor);
     }
   }
 
   if(totalMaskValue > 0.0f) {
     finalColor /= totalMaskValue;
-    finalColor = mix(color, finalColor, uOpacity);
-  } else {
-    finalColor.a = 0.0f;
+    finalColor = mix(vec4(baseColor.rgb, 1.0f), finalColor, uOpacity);
   }
 
   if(edgeColor.a > 0.0f && uBorder) {

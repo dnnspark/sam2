@@ -85,8 +85,6 @@ export type TrackletObject = {
   isDynamic: boolean;
 };
 
-const MAX_NUMBER_TRACKLET_OBJECTS = 3;
-
 export const activeTrackletObjectIdAtom = atom<number | null>(0);
 
 export const activeTrackletObjectAtom = atom<BaseTracklet | null>(get => {
@@ -101,10 +99,6 @@ export const maxTrackletObjectIdAtom = atom<number>(get => {
   const tracklets = get(trackletObjectsAtom);
   return tracklets.reduce((prev, curr) => Math.max(prev, curr.id), 0);
 });
-
-export const isTrackletObjectLimitReachedAtom = atom<boolean>(
-  get => get(trackletObjectsAtom).length >= MAX_NUMBER_TRACKLET_OBJECTS,
-);
 
 export const areTrackletObjectsInitializedAtom = atom<boolean>(get =>
   get(trackletObjectsAtom).every(obj => obj.isInitialized),
@@ -126,11 +120,9 @@ export const labelTypeAtom = atom<'positive' | 'negative'>('positive');
 export const isAddObjectEnabledAtom = atom<boolean>(get => {
   const session = get(sessionAtom);
   const trackletsInitialized = get(areTrackletObjectsInitializedAtom);
-  const isObjectLimitReached = get(isTrackletObjectLimitReachedAtom);
   return (
     session?.ranPropagation === false &&
-    trackletsInitialized &&
-    !isObjectLimitReached
+    trackletsInitialized
   );
 });
 

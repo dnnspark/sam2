@@ -15,6 +15,8 @@
  */
 import {Tracklet} from '@/common/tracker/Tracker';
 
+export const MAX_MASK_TEXTURES = 8;
+
 /**
  * util funtion to generate a WebGL texture using a look up table.
  * @param {WebGL2RenderingContext} gl - The WebGL2 rendering context.
