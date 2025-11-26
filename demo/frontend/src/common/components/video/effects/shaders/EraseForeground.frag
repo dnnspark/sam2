@@ -18,9 +18,8 @@ precision lowp float;
 in vec2 vTexCoord;
 uniform int uNumMasks;
 uniform vec3 uBgColor;
-uniform sampler2D uMaskTexture0;
-uniform sampler2D uMaskTexture1;
-uniform sampler2D uMaskTexture2;
+const int MAX_MASKS = 12;
+uniform sampler2D uMaskTexture[MAX_MASKS];
 
 out vec4 fragColor;
 
@@ -28,17 +27,14 @@ void main() {
   vec4 finalColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
   float totalMaskValue = 0.0f;
 
-  if(uNumMasks > 0) {
-    float maskValue0 = texture(uMaskTexture0, vec2(vTexCoord.y, vTexCoord.x)).r;
-    totalMaskValue += maskValue0;
-  }
-  if(uNumMasks > 1) {
-    float maskValue1 = texture(uMaskTexture1, vec2(vTexCoord.y, vTexCoord.x)).r;
-    totalMaskValue += maskValue1;
-  }
-  if(uNumMasks > 2) {
-    float maskValue2 = texture(uMaskTexture2, vec2(vTexCoord.y, vTexCoord.x)).r;
-    totalMaskValue += maskValue2;
+  int cappedMaskCount = min(uNumMasks, MAX_MASKS);
+  for (int i = 0; i < MAX_MASKS; ++i) {
+    if (i >= cappedMaskCount) {
+      break;
+    }
+
+    float maskValue = texture(uMaskTexture[i], vec2(vTexCoord.y, vTexCoord.x)).r;
+    totalMaskValue += maskValue;
   }
 
   if(totalMaskValue > 0.0f) {

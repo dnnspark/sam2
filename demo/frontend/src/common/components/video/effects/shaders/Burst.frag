@@ -22,17 +22,10 @@ uniform vec2 uSize; // resolution
 uniform int uNumMasks;
 uniform bool uLineColor;
 uniform bool uInterleave;
-uniform sampler2D uMaskTexture0;
-uniform sampler2D uMaskTexture1;
-uniform sampler2D uMaskTexture2;
-
-uniform vec4 uMaskColor0;
-uniform vec4 uMaskColor1;
-uniform vec4 uMaskColor2;
-
-uniform vec4 bbox0;
-uniform vec4 bbox1;
-uniform vec4 bbox2;
+const int MAX_MASKS = 12;
+uniform sampler2D uMaskTexture[MAX_MASKS];
+uniform vec4 uMaskColor[MAX_MASKS];
+uniform vec4 uBBox[MAX_MASKS];
 
 out vec4 fragColor;
 
@@ -40,57 +33,32 @@ void main() {
   float PI = radians(180.0f);
   float lines = uInterleave ? 12.0f : 80.0f;
   vec4 color = texture(uSampler, vTexCoord);
-  vec4 color1 = uMaskColor0 / 255.0;
-  vec4 color2 = uMaskColor1 / 255.0;
-  vec4 color3 = uMaskColor2 / 255.0;
-
-  vec4 mask1 = vec4(0.0f);
-  vec4 mask2 = vec4(0.0f);
-  vec4 mask3 = vec4(0.0f);
   vec4 scopedColor = vec4(0.0f);
 
   vec2 fragCoord = vTexCoord * uSize; // transform to pixel space
   bool scoped = false;
   vec4 transparent = vec4(0.0);
   float p = PI / lines;
+  bool overlap = false;
+  int cappedMaskCount = min(uNumMasks, MAX_MASKS);
 
-  if(uNumMasks > 0) {
-    mask1 = texture(uMaskTexture0, vec2(vTexCoord.y, vTexCoord.x));
-
-    vec2 center1 = (bbox0.xy + bbox0.zw) * 0.5f * uSize;
-    vec2 fragCoordT = (fragCoord - center1) / uSize.y;
-    float a = mod(atan(fragCoordT.y, fragCoordT.x) + p, p + p) - p; // angle of fragment
-
-    float pattern = sin(a * lines);
-    // smoothstep for antialiasing
-    float line = smoothstep(2.8 / uSize.y, 0.0, length(fragCoordT) * abs(sin(a)));
-    
-    vec4 colorToBlend = uLineColor ? vec4(color1.rgb, 0.80f) : vec4(1.0f);
-    bool visible = bbox0 != vec4(0.0f);
-
-    if (uInterleave && visible) {
-      vec4 tempColor = mix(transparent, colorToBlend, step(0.0, pattern));
-      scopedColor += tempColor;
-      scoped = true;
-    } else if (!uInterleave && visible) {
-      vec4 tempColor = uLineColor ? vec4(color1.rgb * line, line) : vec4(line);
-      scopedColor += tempColor;
-      scoped = true;
+  for (int i = 0; i < MAX_MASKS; ++i) {
+    if (i >= cappedMaskCount) {
+      break;
     }
-  }
 
-  if(uNumMasks > 1) {
-    mask2 = texture(uMaskTexture1, vec2(vTexCoord.y, vTexCoord.x));
+    vec4 mask = texture(uMaskTexture[i], vec2(vTexCoord.y, vTexCoord.x));
+    overlap = overlap || mask.r > 0.0f;
 
-    vec2 center2 = (bbox1.xy + bbox1.zw) * 0.5f * uSize;
-    vec2 fragCoordT = (fragCoord - center2) / uSize.y;
+    vec2 center = (uBBox[i].xy + uBBox[i].zw) * 0.5f * uSize;
+    vec2 fragCoordT = (fragCoord - center) / uSize.y;
     float a = mod(atan(fragCoordT.y, fragCoordT.x) + p, p + p) - p; // angle of fragment
 
     float pattern = sin(a * lines);
     float line = smoothstep(2.8 / uSize.y, 0.0, length(fragCoordT) * abs(sin(a)));
-    
-    vec4 colorToBlend = uLineColor ? vec4(color2.rgb, 0.8f) : vec4(1.0f);
-    bool visible = bbox1 != vec4(0.0f);
+
+    vec4 colorToBlend = uLineColor ? vec4((uMaskColor[i] / 255.0).rgb, 0.8f) : vec4(1.0f);
+    bool visible = uBBox[i] != vec4(0.0f);
 
     if (uInterleave && visible) {
       vec4 tempColor = mix(transparent, colorToBlend, step(0.0, pattern));
@@ -99,40 +67,11 @@ void main() {
       }
       scoped = true;
     } else if (!uInterleave && visible) {
-      vec4 tempColor = uLineColor ? vec4(color2.rgb * line, line) : vec4(line);
-      scopedColor += tempColor;    
-      scoped = true;
-    }
-  }
-
-  if (uNumMasks > 2) {
-    mask3 = texture(uMaskTexture2, vec2(vTexCoord.y, vTexCoord.x));
-
-    vec2 center3 = (bbox2.xy + bbox2.zw) * 0.5f * uSize;
-    vec2 fragCoordT = (fragCoord - center3) / uSize.y;
-
-    float a = mod(atan(fragCoordT.y, fragCoordT.x) + p, p + p) - p; // angle of fragment
-
-    float pattern = sin(a * lines);
-    float line = smoothstep(2.8 / uSize.y, 0.0, length(fragCoordT) * abs(sin(a)));
-
-    vec4 colorToBlend = uLineColor ? vec4(color3.rgb, 0.8f) : vec4(1.0f);
-    bool visible = bbox2 != vec4(0.0f);
-
-    if (uInterleave && visible) {
-      vec4 tempColor = mix(transparent, colorToBlend, step(0.0, pattern));
-      if (scopedColor == vec4(0.0)) {
-        scopedColor += tempColor;
-      }
-      scoped = true;
-    } else if (!uInterleave && visible) {
-      vec4 tempColor = uLineColor ? vec4(color3.rgb * line, line) : vec4(line);
+      vec4 tempColor = uLineColor ? vec4((uMaskColor[i] / 255.0).rgb * line, line) : vec4(line);
       scopedColor += tempColor;
       scoped = true;
     }
   }
-
-  bool overlap = (mask1.r > 0.0f || mask2.r > 0.0f || mask3.r > 0.0f);
   if(scoped) {
     fragColor = overlap ? color : scopedColor;
   } else {

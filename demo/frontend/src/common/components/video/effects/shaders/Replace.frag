@@ -20,13 +20,9 @@ uniform vec2 uSize;
 uniform int uNumMasks;
 uniform sampler2D uEmojiTexture;
 uniform bool uFill; // use all emoji texture
-uniform sampler2D uMaskTexture0;
-uniform sampler2D uMaskTexture1;
-uniform sampler2D uMaskTexture2;
-
-uniform vec4 bbox0;
-uniform vec4 bbox1;
-uniform vec4 bbox2;
+const int MAX_MASKS = 12;
+uniform sampler2D uMaskTexture[MAX_MASKS];
+uniform vec4 uBBox[MAX_MASKS];
 
 out vec4 fragColor;
 
@@ -51,45 +47,18 @@ void main() {
 
   vec4 emojiColor;
 
-  if(uNumMasks > 0) {
-    float maskValue0 = texture(uMaskTexture0, vec2(vTexCoord.y, vTexCoord.x)).r;
-    float distanceFromCenter;
-    vec2 adjustedTexCoord = calculateAdjustedTexCoord(vTexCoord, bbox0, aspectRatio, distanceFromCenter);
+  int cappedMaskCount = min(uNumMasks, MAX_MASKS);
+  for (int i = 0; i < MAX_MASKS; ++i) {
+    if (i >= cappedMaskCount) {
+      break;
+    }
 
-    if(maskValue0 > 0.0f) {
-      emojiColor = texture(uEmojiTexture, adjustedTexCoord);
-      if(distanceFromCenter > 0.85f && !uFill) {
-        emojiColor = bgFill;
-      }
-    }
-    if(uFill) {
-      emojiColor = texture(uEmojiTexture, adjustedTexCoord);
-    }
-    
-    totalMaskValue += maskValue0;
-  }
-  if(uNumMasks > 1) {
-    float maskValue1 = texture(uMaskTexture1, vec2(vTexCoord.y, vTexCoord.x)).r;
+    float maskValue = texture(uMaskTexture[i], vec2(vTexCoord.y, vTexCoord.x)).r;
     float distanceFromCenter;
-    vec2 adjustedTexCoord = calculateAdjustedTexCoord(vTexCoord, bbox1, aspectRatio, distanceFromCenter);
+    vec2 adjustedTexCoord =
+        calculateAdjustedTexCoord(vTexCoord, uBBox[i], aspectRatio, distanceFromCenter);
 
-    if(maskValue1 > 0.0f) {
-      emojiColor = texture(uEmojiTexture, adjustedTexCoord);
-      if(distanceFromCenter > 0.85f && !uFill) {
-        emojiColor = bgFill;
-      }
-    }
-    if(uFill && emojiColor.a == 0.0f) {
-      emojiColor = texture(uEmojiTexture, adjustedTexCoord);
-    }
-      
-    totalMaskValue += maskValue1;
-  }
-  if(uNumMasks > 2) {
-    float maskValue2 = texture(uMaskTexture2, vec2(vTexCoord.y, vTexCoord.x)).r;
-    float distanceFromCenter;
-    vec2 adjustedTexCoord = calculateAdjustedTexCoord(vTexCoord, bbox2, aspectRatio, distanceFromCenter);
-    if(maskValue2 > 0.0f) {
+    if(maskValue > 0.0f) {
       emojiColor = texture(uEmojiTexture, adjustedTexCoord);
       if(distanceFromCenter > 0.85f && !uFill) {
         emojiColor = bgFill;
@@ -99,7 +68,7 @@ void main() {
       emojiColor = texture(uEmojiTexture, adjustedTexCoord);
     }
 
-    totalMaskValue += maskValue2;
+    totalMaskValue += maskValue;
   }
 
   if(totalMaskValue > 0.0f) {

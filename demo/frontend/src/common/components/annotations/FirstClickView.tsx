@@ -34,8 +34,8 @@ export default function FirstClickView() {
       <div className="grow flex flex-col gap-6">
         <h2 className="text-2xl">Click an object in the video to start</h2>
         <p className="!text-gray-60">
-          You&apos;ll be able to use {DEMO_SHORT_NAME} to make fun edits to any
-          video by tracking objects and applying visual effects.
+          With the SAM 2 + VGGT demo, you’ll be able to create 3D annotations
+          from any video by tracking objects and reconstructing them in 3D.
         </p>
         <p className="!text-gray-60">
           To start, click any object in the video.

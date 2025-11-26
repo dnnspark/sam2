@@ -21,7 +21,11 @@ import {
 import vertexShaderSource from '@/common/components/video/effects/shaders/DefaultVert.vert?raw';
 import fragmentShaderSource from '@/common/components/video/effects/shaders/EraseForeground.frag?raw';
 import {Tracklet} from '@/common/tracker/Tracker';
-import {preAllocateTextures} from '@/common/utils/ShaderUtils';
+import {
+  ensureMaskTextureCapacity,
+  MAX_MASK_TEXTURES,
+  preAllocateTextures,
+} from '@/common/utils/ShaderUtils';
 import {RLEObject, decode} from '@/jscocotools/mask';
 import invariant from 'invariant';
 import {CanvasForm} from 'pts';
@@ -48,8 +52,7 @@ export default class EraseForegroundGLEffect extends BaseGLEffect {
     this._numMasksUniformLocation = gl.getUniformLocation(program, 'uNumMasks');
     gl.uniform1i(this._numMasksUniformLocation, this._numMasks);
 
-    // We know the max number of textures, pre-allocate 3.
-    this._maskTextures = preAllocateTextures(gl, 3);
+    this._maskTextures = preAllocateTextures(gl, MAX_MASK_TEXTURES);
   }
 
   apply(form: CanvasForm, context: EffectFrameContext, _tracklets: Tracklet[]) {
@@ -68,17 +71,20 @@ export default class EraseForegroundGLEffect extends BaseGLEffect {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    gl.uniform1i(this._numMasksUniformLocation, context.masks.length);
+    const maskCount = Math.min(context.masks.length, MAX_MASK_TEXTURES);
+    gl.uniform1i(this._numMasksUniformLocation, maskCount);
     gl.uniform3fv(gl.getUniformLocation(program, 'uBgColor'), fillColor);
 
-    context.masks.forEach((mask, index) => {
+    ensureMaskTextureCapacity(gl, this._maskTextures, maskCount, MAX_MASK_TEXTURES);
+
+    context.masks.slice(0, maskCount).forEach((mask, index) => {
       const decodedMask = decode([mask.bitmap as RLEObject]);
       const maskData = decodedMask.data as Uint8Array;
       gl.activeTexture(gl.TEXTURE0 + index);
       gl.bindTexture(gl.TEXTURE_2D, this._maskTextures[index]);
 
       gl.uniform1i(
-        gl.getUniformLocation(program, `uMaskTexture${index}`),
+        gl.getUniformLocation(program, `uMaskTexture[${index}]`),
         index,
       );
 
@@ -100,7 +106,7 @@ export default class EraseForegroundGLEffect extends BaseGLEffect {
 
     // Unbind textures
     gl.bindTexture(gl.TEXTURE_2D, null);
-    context.masks.forEach((_, index) => {
+    context.masks.slice(0, maskCount).forEach((_, index) => {
       gl.activeTexture(gl.TEXTURE0 + index);
       gl.bindTexture(gl.TEXTURE_2D, null);
     });
@@ -108,7 +114,7 @@ export default class EraseForegroundGLEffect extends BaseGLEffect {
     const ctx = form.ctx;
     invariant(this._canvas !== null, 'canvas is required');
 
-    if (context.masks.length) {
+    if (maskCount) {
       ctx.drawImage(this._canvas, 0, 0);
     }
   }

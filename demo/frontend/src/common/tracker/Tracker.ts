@@ -42,6 +42,7 @@ export type Tracklet = {
   points: FramePoints[];
   masks: Mask[];
   isInitialized: boolean;
+  isDynamic: boolean;
 };
 
 export type BaseTracklet = Omit<Tracklet, 'masks'> & {
@@ -72,6 +73,7 @@ export interface ITracker {
   streamMasks(frameIndex: number): Promise<void>;
   abortStreamMasks(): void;
   enableStats(): void;
+  setTrackletDynamic(trackletId: number, isDynamic: boolean): void;
 }
 
 export abstract class Tracker implements ITracker {
@@ -96,6 +98,7 @@ export abstract class Tracker implements ITracker {
   abstract streamMasks(frameIndex: number): Promise<void>;
   abstract abortStreamMasks(): void;
   abstract enableStats(): void;
+  abstract setTrackletDynamic(trackletId: number, isDynamic: boolean): void;
 
   // PRIVATE FUNCTIONS
 

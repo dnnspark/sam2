@@ -77,10 +77,18 @@ export default abstract class BaseGLEffect extends AbstractEffect {
 
   apply(form: CanvasForm, context: EffectFrameContext, _tracklets: Tracklet[]) {
     const gl = this._gl;
+    const program = this._program;
     invariant(gl !== null, 'WebGL2 context is required');
+    invariant(program !== null, 'WebGL program is required');
+
+    gl.useProgram(program);
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const viewportWidth = context.width;
+    const viewportHeight = context.height;
+    gl.viewport(0, 0, viewportWidth, viewportHeight);
 
     gl.activeTexture(gl.TEXTURE0 + this._frameTextureUnit);
     gl.bindTexture(gl.TEXTURE_2D, this._frameTexture);

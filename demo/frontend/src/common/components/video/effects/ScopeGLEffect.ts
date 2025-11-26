@@ -22,7 +22,12 @@ import {
 import vertexShaderSource from '@/common/components/video/effects/shaders/DefaultVert.vert?raw';
 import fragmentShaderSource from '@/common/components/video/effects/shaders/Scope.frag?raw';
 import {Tracklet} from '@/common/tracker/Tracker';
-import {normalizeBounds, preAllocateTextures} from '@/common/utils/ShaderUtils';
+import {
+  ensureMaskTextureCapacity,
+  MAX_MASK_TEXTURES,
+  normalizeBounds,
+  preAllocateTextures,
+} from '@/common/utils/ShaderUtils';
 import {RLEObject, decode} from '@/jscocotools/mask';
 import invariant from 'invariant';
 import {CanvasForm} from 'pts';
@@ -51,8 +56,7 @@ export default class ScopeGLEffect extends BaseGLEffect {
     this._numMasksUniformLocation = gl.getUniformLocation(program, 'uNumMasks');
     gl.uniform1i(this._numMasksUniformLocation, this._numMasks);
 
-    // We know the max number of textures, pre-allocate 3.
-    this._maskTextures = preAllocateTextures(gl, 3);
+    this._maskTextures = preAllocateTextures(gl, MAX_MASK_TEXTURES);
   }
 
   apply(form: CanvasForm, context: EffectFrameContext, _tracklets: Tracklet[]) {
@@ -68,7 +72,8 @@ export default class ScopeGLEffect extends BaseGLEffect {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     // dynamic uniforms per frame
-    gl.uniform1i(this._numMasksUniformLocation, context.masks.length);
+    const maskCount = Math.min(context.masks.length, MAX_MASK_TEXTURES);
+    gl.uniform1i(this._numMasksUniformLocation, maskCount);
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this._frameTexture);
@@ -88,7 +93,9 @@ export default class ScopeGLEffect extends BaseGLEffect {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     // Create and bind 2D textures for each mask
-    context.masks.forEach((mask, index) => {
+    ensureMaskTextureCapacity(gl, this._maskTextures, maskCount, MAX_MASK_TEXTURES);
+
+    context.masks.slice(0, maskCount).forEach((mask, index) => {
       const decodedMask = decode([mask.bitmap as RLEObject]);
       const maskData = decodedMask.data as Uint8Array;
       gl.activeTexture(gl.TEXTURE0 + index + this._masksTextureUnitStart);
@@ -105,18 +112,18 @@ export default class ScopeGLEffect extends BaseGLEffect {
 
       // dynamic uniforms per mask
       gl.uniform1i(
-        gl.getUniformLocation(program, `uMaskTexture${index}`),
+        gl.getUniformLocation(program, `uMaskTexture[${index}]`),
         this._masksTextureUnitStart + index,
       );
       const color = hexToRgb(context.maskColors[index]);
       gl.uniform4f(
-        gl.getUniformLocation(program, `uMaskColor${index}`),
+        gl.getUniformLocation(program, `uMaskColor[${index}]`),
         color.r,
         color.g,
         color.b,
         color.a,
       );
-      gl.uniform4fv(gl.getUniformLocation(program, `bbox${index}`), boundaries);
+      gl.uniform4fv(gl.getUniformLocation(program, `uBBox[${index}]`), boundaries);
       gl.uniform1i(
         gl.getUniformLocation(program, 'uFillColor'),
         this.variant % 2 === 0 ? 0 : 1,
@@ -148,7 +155,7 @@ export default class ScopeGLEffect extends BaseGLEffect {
 
     // Unbind textures
     gl.bindTexture(gl.TEXTURE_2D, null);
-    context.masks.forEach((_, index) => {
+    context.masks.slice(0, maskCount).forEach((_, index) => {
       gl.activeTexture(gl.TEXTURE0 + index + this._masksTextureUnitStart);
       gl.bindTexture(gl.TEXTURE_2D, null);
     });

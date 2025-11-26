@@ -41,6 +41,7 @@ import {
   TrackletCreatedResponse,
   TrackletDeletedResponse,
   UpdatePointsRequest,
+  UpdateTrackletDynamicRequest,
 } from '@/common/tracker/TrackerTypes';
 import {TrackerOptions, Trackers} from '@/common/tracker/Trackers';
 import {MP4ArrayBuffer} from 'mp4box';
@@ -395,6 +396,13 @@ export default class VideoWorkerBridge extends EventEmitter<VideoWorkerEventMap>
       };
       this.worker.addEventListener('message', handleResponse);
       this.sendRequest<DeleteTrackletRequest>('deleteTracklet', {trackletId});
+    });
+  }
+
+  setTrackletDynamic(trackletId: number, isDynamic: boolean): void {
+    this.sendRequest<UpdateTrackletDynamicRequest>('updateTrackletDynamic', {
+      trackletId,
+      isDynamic,
     });
   }
 

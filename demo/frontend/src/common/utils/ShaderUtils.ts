@@ -15,6 +15,11 @@
  */
 import {Tracklet} from '@/common/tracker/Tracker';
 
+// Keep the mask texture pool large enough to cover typical WebGL 2 limits
+// while matching the GLSL shader array sizes. Bumping this higher than the
+// shader constants will lead to uniforms not being found at link time.
+export const MAX_MASK_TEXTURES = 12;
+
 /**
  * util funtion to generate a WebGL texture using a look up table.
  * @param {WebGL2RenderingContext} gl - The WebGL2 rendering context.
@@ -119,6 +124,26 @@ export function preAllocateTextures(
   }
 
   return maskTextures as WebGLTexture[];
+}
+
+/**
+ * Ensures the mask texture array has enough entries for the required mask count.
+ * Adds additional textures if the current capacity is smaller than `required`.
+ */
+export function ensureMaskTextureCapacity(
+  gl: WebGL2RenderingContext,
+  textures: WebGLTexture[],
+  required: number,
+  minimum: number = 0,
+): WebGLTexture[] {
+  const desired = Math.max(required, minimum);
+  const missing = Math.max(0, desired - textures.length);
+
+  if (missing > 0) {
+    textures.push(...preAllocateTextures(gl, missing));
+  }
+
+  return textures;
 }
 
 /**
