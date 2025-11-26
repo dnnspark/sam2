@@ -24,6 +24,7 @@ import fragmentShaderSource from '@/common/components/video/effects/shaders/Over
 import {Tracklet} from '@/common/tracker/Tracker';
 import {
   findIndexByTrackletId,
+  ensureMaskTextureCapacity,
   preAllocateTextures,
 } from '@/common/utils/ShaderUtils';
 import {RLEObject, decode} from '@/jscocotools/mask';
@@ -103,6 +104,8 @@ export default class OverlayEffect extends BaseGLEffect {
       this._activeMask,
     );
 
+    ensureMaskTextureCapacity(gl, this._maskTextures, context.masks.length, 3);
+
     // Activate original frame texture
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this._frameTexture);
@@ -127,13 +130,13 @@ export default class OverlayEffect extends BaseGLEffect {
       gl.bindTexture(gl.TEXTURE_2D, this._maskTextures[index]);
 
       gl.uniform1i(
-        gl.getUniformLocation(program, `uMaskTexture${index}`),
+        gl.getUniformLocation(program, `uMaskTexture[${index}]`),
         this._masksTextureUnitStart + index,
       );
 
       const color = hexToRgb(context.maskColors[index]);
       gl.uniform4f(
-        gl.getUniformLocation(program, `uMaskColor${index}`),
+        gl.getUniformLocation(program, `uMaskColor[${index}]`),
         color.r,
         color.g,
         color.b,

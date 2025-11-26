@@ -21,7 +21,10 @@ import {
 import vertexShaderSource from '@/common/components/video/effects/shaders/DefaultVert.vert?raw';
 import fragmentShaderSource from '@/common/components/video/effects/shaders/EraseForeground.frag?raw';
 import {Tracklet} from '@/common/tracker/Tracker';
-import {preAllocateTextures} from '@/common/utils/ShaderUtils';
+import {
+  ensureMaskTextureCapacity,
+  preAllocateTextures,
+} from '@/common/utils/ShaderUtils';
 import {RLEObject, decode} from '@/jscocotools/mask';
 import invariant from 'invariant';
 import {CanvasForm} from 'pts';
@@ -70,6 +73,8 @@ export default class EraseForegroundGLEffect extends BaseGLEffect {
 
     gl.uniform1i(this._numMasksUniformLocation, context.masks.length);
     gl.uniform3fv(gl.getUniformLocation(program, 'uBgColor'), fillColor);
+
+    ensureMaskTextureCapacity(gl, this._maskTextures, context.masks.length, 3);
 
     context.masks.forEach((mask, index) => {
       const decodedMask = decode([mask.bitmap as RLEObject]);

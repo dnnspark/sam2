@@ -22,6 +22,7 @@ import vertexShaderSource from '@/common/components/video/effects/shaders/Defaul
 import fragmentShaderSource from '@/common/components/video/effects/shaders/VibrantMask.frag?raw';
 import {Tracklet} from '@/common/tracker/Tracker';
 import {
+  ensureMaskTextureCapacity,
   generateLUTDATA,
   load3DLUT,
   preAllocateTextures,
@@ -123,6 +124,8 @@ export default class VibrantMaskEffect extends BaseGLEffect {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     // Create and bind 2D textures for each mask
+    ensureMaskTextureCapacity(gl, this._maskTextures, context.masks.length, 3);
+
     context.masks.forEach((mask, index) => {
       const decodedMask = decode([mask.bitmap as RLEObject]);
       const maskData = decodedMask.data as Uint8Array;

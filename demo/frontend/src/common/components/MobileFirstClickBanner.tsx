@@ -40,9 +40,9 @@ export default function MobileFirstClickBanner() {
       </div>
       <div className="text-sm text-[#A7B3BF]">
         <p>
-          You&apos;ll be able to use {DEMO_SHORT_NAME} to make fun edits to any
-          video by tracking objects and applying visual effects. To start, click
-          any object in the video.
+          With the SAM 2 + VGGT demo, you’ll be able to create 3D annotations
+          from any video by tracking objects and reconstructing them in 3D. To
+          start, click any object in the video.
         </p>
       </div>
       <div className="flex items-center">
