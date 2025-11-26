@@ -22,6 +22,8 @@ import vertexShaderSource from '@/common/components/video/effects/shaders/Defaul
 import fragmentShaderSource from '@/common/components/video/effects/shaders/VibrantMask.frag?raw';
 import {Tracklet} from '@/common/tracker/Tracker';
 import {
+  ensureMaskTextureCapacity,
+  MAX_MASK_TEXTURES,
   generateLUTDATA,
   load3DLUT,
   preAllocateTextures,
@@ -72,8 +74,7 @@ export default class VibrantMaskEffect extends BaseGLEffect {
     );
     gl.uniform1f(this._currentFrameLocation, 0);
 
-    // We know the max number of textures, pre-allocate 3.
-    this._maskTextures = preAllocateTextures(gl, 3);
+    this._maskTextures = preAllocateTextures(gl, MAX_MASK_TEXTURES);
 
     this._lutTextures = []; // clear any previous pool of textures
 
@@ -98,7 +99,8 @@ export default class VibrantMaskEffect extends BaseGLEffect {
 
     // dynamic uniforms per frame
     gl.uniform1f(this._currentFrameLocation, context.frameIndex);
-    gl.uniform1i(this._numMasksUniformLocation, context.masks.length);
+    const maskCount = Math.min(context.masks.length, MAX_MASK_TEXTURES);
+    gl.uniform1i(this._numMasksUniformLocation, maskCount);
 
     // Bind the LUT texture to texture unit 1
     const lutTexture = this._lutTextures[this.variant];
@@ -123,7 +125,9 @@ export default class VibrantMaskEffect extends BaseGLEffect {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     // Create and bind 2D textures for each mask
-    context.masks.forEach((mask, index) => {
+    ensureMaskTextureCapacity(gl, this._maskTextures, maskCount, MAX_MASK_TEXTURES);
+
+    context.masks.slice(0, maskCount).forEach((mask, index) => {
       const decodedMask = decode([mask.bitmap as RLEObject]);
       const maskData = decodedMask.data as Uint8Array;
       gl.activeTexture(gl.TEXTURE0 + index + this._masksTextureUnitStart);
@@ -131,7 +135,7 @@ export default class VibrantMaskEffect extends BaseGLEffect {
 
       // dynamic uniforms per mask
       gl.uniform1i(
-        gl.getUniformLocation(program, `uMaskTexture${index}`),
+        gl.getUniformLocation(program, `uMaskTexture[${index}]`),
         this._masksTextureUnitStart + index,
       );
 
@@ -153,7 +157,7 @@ export default class VibrantMaskEffect extends BaseGLEffect {
 
     // Unbind textures
     gl.bindTexture(gl.TEXTURE_2D, null);
-    context.masks.forEach((_, index) => {
+    context.masks.slice(0, maskCount).forEach((_, index) => {
       gl.activeTexture(gl.TEXTURE0 + index + this._masksTextureUnitStart);
       gl.bindTexture(gl.TEXTURE_2D, null);
     });

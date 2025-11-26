@@ -82,9 +82,12 @@ export type TrackletObject = {
   points: SegmentationPoint[][];
   masks: TrackletMask[];
   isInitialized: boolean;
+  isDynamic: boolean;
 };
 
-const MAX_NUMBER_TRACKLET_OBJECTS = 3;
+// Keep this effectively unbounded so users can create as many objects as their
+// hardware comfortably supports.
+const MAX_NUMBER_TRACKLET_OBJECTS = Infinity;
 
 export const activeTrackletObjectIdAtom = atom<number | null>(0);
 

@@ -225,6 +225,7 @@ export class SAM2Model extends Tracker {
       points: [],
       masks: [],
       isInitialized: false,
+      isDynamic: false,
     };
 
     this._session.tracklets[nextId] = newTracklet;
@@ -293,6 +294,21 @@ export class SAM2Model extends Tracker {
         },
       });
     });
+  }
+
+  public setTrackletDynamic(trackletId: number, isDynamic: boolean): void {
+    const tracklet = this._session.tracklets[trackletId];
+    if (tracklet == null) {
+      Logger.warn('Tracklet %s not found when updating dynamic flag', trackletId);
+      return;
+    }
+
+    this._session.tracklets[trackletId] = {
+      ...tracklet,
+      isDynamic,
+    };
+
+    this._updateTracklets();
   }
 
   public updatePoints(
@@ -649,6 +665,7 @@ export class SAM2Model extends Tracker {
         points: trackletPoints,
         thumbnail,
         masks,
+        isDynamic,
       } = tracklet;
       return {
         id,
@@ -656,6 +673,7 @@ export class SAM2Model extends Tracker {
         isInitialized,
         points: trackletPoints,
         thumbnail,
+        isDynamic,
         masks: masks.map(mask => ({
           shape: mask.shape,
           bounds: mask.bounds,

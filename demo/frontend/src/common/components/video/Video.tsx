@@ -121,6 +121,7 @@ export type VideoRef = {
   createTracklet(): Promise<BaseTracklet>;
   deleteTracklet(trackletId: number): Promise<void>;
   updatePoints(trackletId: number, points: SegmentationPoint[]): void;
+  setTrackletDynamic(trackletId: number, isDynamic: boolean): void;
   clearPointsInVideo(): Promise<boolean>;
   getWorker_ONLY_USE_WITH_CAUTION(): Worker;
 };
@@ -243,6 +244,9 @@ export default forwardRef<VideoRef, Props>(function Video(
       },
       deleteTracklet(trackletId: number): Promise<void> {
         return bridge.deleteTracklet(trackletId);
+      },
+      setTrackletDynamic(trackletId: number, isDynamic: boolean): void {
+        bridge.setTrackletDynamic(trackletId, isDynamic);
       },
       updatePoints(trackletId: number, points: SegmentationPoint[]): void {
         bridge.updatePoints(trackletId, points);

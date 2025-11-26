@@ -20,9 +20,8 @@ in vec2 vTexCoord;
 uniform sampler2D uSampler;
 uniform float uContrast;
 uniform int uNumMasks;
-uniform sampler2D uMaskTexture0;
-uniform sampler2D uMaskTexture1;
-uniform sampler2D uMaskTexture2;
+const int MAX_MASKS = 12;
+uniform sampler2D uMaskTexture[MAX_MASKS];
 
 out vec4 fragColor;
 
@@ -39,21 +38,16 @@ vec3 applySepia(vec4 color) {
 void main() {
   vec4 color = texture(uSampler, vTexCoord);
 
-  vec4 color1 = vec4(0.0f);
-  vec4 color2 = vec4(0.0f);
-  vec4 color3 = vec4(0.0f);
+  bool overlap = false;
+  int cappedMaskCount = min(uNumMasks, MAX_MASKS);
+  for (int i = 0; i < MAX_MASKS; ++i) {
+    if (i >= cappedMaskCount) {
+      break;
+    }
 
-  if(uNumMasks > 0) {
-    color1 = texture(uMaskTexture0, vec2(vTexCoord.y, vTexCoord.x));
+    vec4 maskValue = texture(uMaskTexture[i], vec2(vTexCoord.y, vTexCoord.x));
+    overlap = overlap || maskValue.r > 0.0f;
   }
-  if(uNumMasks > 1) {
-    color2 = texture(uMaskTexture1, vec2(vTexCoord.y, vTexCoord.x));
-  }
-  if(uNumMasks > 2) {
-    color3 = texture(uMaskTexture2, vec2(vTexCoord.y, vTexCoord.x));
-  }
-
-  bool overlap = (color1.r > 0.0f || color2.r > 0.0f || color3.r > 0.0f);
   if(overlap) {    
     if (uContrast == 0.0) {
       color = vec4(applySepia(color), color.a);

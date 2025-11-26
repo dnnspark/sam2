@@ -24,6 +24,8 @@ import fragmentShaderSource from '@/common/components/video/effects/shaders/Over
 import {Tracklet} from '@/common/tracker/Tracker';
 import {
   findIndexByTrackletId,
+  MAX_MASK_TEXTURES,
+  ensureMaskTextureCapacity,
   preAllocateTextures,
 } from '@/common/utils/ShaderUtils';
 import {RLEObject, decode} from '@/jscocotools/mask';
@@ -56,8 +58,7 @@ export default class OverlayEffect extends BaseGLEffect {
     this._numMasksUniformLocation = gl.getUniformLocation(program, 'uNumMasks');
     gl.uniform1i(this._numMasksUniformLocation, this._numMasks);
 
-    // We know the max number of textures, pre-allocate 3.
-    this._maskTextures = preAllocateTextures(gl, 3);
+    this._maskTextures = preAllocateTextures(gl, MAX_MASK_TEXTURES);
   }
 
   apply(form: CanvasForm, context: EffectFrameContext, _tracklets: Tracklet[]) {
@@ -67,8 +68,13 @@ export default class OverlayEffect extends BaseGLEffect {
     invariant(gl !== null, 'WebGL2 context is required');
     invariant(program !== null, 'Not WebGL program found');
 
+    gl.useProgram(program);
+
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.viewport(0, 0, context.width, context.height);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
     const opacity = [0.5, 0.75, 0.35, 0.95][this.variant % 4];
     gl.uniform1f(
@@ -76,7 +82,9 @@ export default class OverlayEffect extends BaseGLEffect {
       context.timeParameter ?? 1.5, // Pass a constant value when no time parameter
     );
     gl.uniform1f(gl.getUniformLocation(program, 'uOpacity'), opacity);
-    gl.uniform1i(this._numMasksUniformLocation, context.masks.length);
+    const maskCount = Math.min(context.masks.length, MAX_MASK_TEXTURES);
+
+    gl.uniform1i(this._numMasksUniformLocation, maskCount);
     gl.uniform1i(
       gl.getUniformLocation(program, 'uBorder'),
       this.variant % this.numVariants < 4 ? 1 : 0,
@@ -103,6 +111,8 @@ export default class OverlayEffect extends BaseGLEffect {
       this._activeMask,
     );
 
+    ensureMaskTextureCapacity(gl, this._maskTextures, maskCount, MAX_MASK_TEXTURES);
+
     // Activate original frame texture
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this._frameTexture);
@@ -120,20 +130,20 @@ export default class OverlayEffect extends BaseGLEffect {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-    context.masks.forEach((mask, index) => {
+    context.masks.slice(0, maskCount).forEach((mask, index) => {
       const decodedMask = decode([mask.bitmap as RLEObject]);
       const maskData = decodedMask.data as Uint8Array;
       gl.activeTexture(gl.TEXTURE0 + index + this._masksTextureUnitStart);
       gl.bindTexture(gl.TEXTURE_2D, this._maskTextures[index]);
 
       gl.uniform1i(
-        gl.getUniformLocation(program, `uMaskTexture${index}`),
+        gl.getUniformLocation(program, `uMaskTexture[${index}]`),
         this._masksTextureUnitStart + index,
       );
 
       const color = hexToRgb(context.maskColors[index]);
       gl.uniform4f(
-        gl.getUniformLocation(program, `uMaskColor${index}`),
+        gl.getUniformLocation(program, `uMaskColor[${index}]`),
         color.r,
         color.g,
         color.b,
