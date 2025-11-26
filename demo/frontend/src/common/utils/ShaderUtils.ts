@@ -122,6 +122,26 @@ export function preAllocateTextures(
 }
 
 /**
+ * Ensures the mask texture array has enough entries for the required mask count.
+ * Adds additional textures if the current capacity is smaller than `required`.
+ */
+export function ensureMaskTextureCapacity(
+  gl: WebGL2RenderingContext,
+  textures: WebGLTexture[],
+  required: number,
+  minimum: number = 0,
+): WebGLTexture[] {
+  const desired = Math.max(required, minimum);
+  const missing = Math.max(0, desired - textures.length);
+
+  if (missing > 0) {
+    textures.push(...preAllocateTextures(gl, missing));
+  }
+
+  return textures;
+}
+
+/**
  * Finds the index of a Tracklet object within an array based on its unique identifier.
  * @param objects - The array of Tracklet objects to search within.
  * @param id - The unique identifier of the Tracklet object to find.

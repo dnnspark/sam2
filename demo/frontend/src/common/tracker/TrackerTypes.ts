@@ -60,6 +60,13 @@ export type DeleteTrackletRequest = Request<
     trackletId: number;
   }
 >;
+export type UpdateTrackletDynamicRequest = Request<
+  'updateTrackletDynamic',
+  {
+    trackletId: number;
+    isDynamic: boolean;
+  }
+>;
 export type UpdatePointsRequest = Request<
   'updatePoints',
   {
@@ -92,6 +99,7 @@ export type TrackerRequest =
   | CloseSessionRequest
   | CreateTrackletRequest
   | DeleteTrackletRequest
+  | UpdateTrackletDynamicRequest
   | UpdatePointsRequest
   | ClearPointsInFrameRequest
   | ClearPointsInVideoRequest

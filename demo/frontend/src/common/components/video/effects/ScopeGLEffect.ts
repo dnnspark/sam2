@@ -22,7 +22,11 @@ import {
 import vertexShaderSource from '@/common/components/video/effects/shaders/DefaultVert.vert?raw';
 import fragmentShaderSource from '@/common/components/video/effects/shaders/Scope.frag?raw';
 import {Tracklet} from '@/common/tracker/Tracker';
-import {normalizeBounds, preAllocateTextures} from '@/common/utils/ShaderUtils';
+import {
+  ensureMaskTextureCapacity,
+  normalizeBounds,
+  preAllocateTextures,
+} from '@/common/utils/ShaderUtils';
 import {RLEObject, decode} from '@/jscocotools/mask';
 import invariant from 'invariant';
 import {CanvasForm} from 'pts';
@@ -88,6 +92,8 @@ export default class ScopeGLEffect extends BaseGLEffect {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     // Create and bind 2D textures for each mask
+    ensureMaskTextureCapacity(gl, this._maskTextures, context.masks.length, 3);
+
     context.masks.forEach((mask, index) => {
       const decodedMask = decode([mask.bitmap as RLEObject]);
       const maskData = decodedMask.data as Uint8Array;
