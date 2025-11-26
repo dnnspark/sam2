@@ -82,6 +82,7 @@ export type TrackletObject = {
   points: SegmentationPoint[][];
   masks: TrackletMask[];
   isInitialized: boolean;
+  isDynamic: boolean;
 };
 
 const MAX_NUMBER_TRACKLET_OBJECTS = 3;
