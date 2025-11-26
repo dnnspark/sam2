@@ -158,6 +158,13 @@ export default abstract class BaseGLEffect extends AbstractEffect {
   ) {
     this._frameTexture = gl.createTexture();
 
+    gl.activeTexture(gl.TEXTURE0 + this._frameTextureUnit);
+    gl.bindTexture(gl.TEXTURE_2D, this._frameTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
     gl.uniform1i(
       gl.getUniformLocation(program, 'uSampler'),
       this._frameTextureUnit,
