@@ -76,7 +76,7 @@ void main() {
   float aspectRatio = uSize.y / uSize.x;
   vec2 tvTexCoord = vec2(vTexCoord.y, vTexCoord.x);
 
-  vec4 finalColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+  vec4 finalColor = color;
   float totalMaskValue = 0.0f;
   vec4 edgeColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
   float numRipples = 1.75;
@@ -115,8 +115,6 @@ void main() {
   if(totalMaskValue > 0.0f) {
     finalColor /= totalMaskValue;
     finalColor = mix(color, finalColor, uOpacity);
-  } else {
-    finalColor.a = 0.0f;
   }
 
   if(edgeColor.a > 0.0f && uBorder) {
