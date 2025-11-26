@@ -71,12 +71,12 @@ vec2 calculateAdjustedTexCoord(vec2 vTexCoord, vec4 bbox, float aspectRatio) {
 }
 
 void main() {
-  vec4 color = texture(uSampler, vTexCoord);
+  vec4 baseColor = texture(uSampler, vTexCoord);
   float saturationFactor = 0.7;
   float aspectRatio = uSize.y / uSize.x;
   vec2 tvTexCoord = vec2(vTexCoord.y, vTexCoord.x);
 
-  vec4 finalColor = color;
+  vec4 finalColor = vec4(baseColor.rgb, 1.0f);
   float totalMaskValue = 0.0f;
   vec4 edgeColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
   float numRipples = 1.75;
@@ -114,7 +114,7 @@ void main() {
 
   if(totalMaskValue > 0.0f) {
     finalColor /= totalMaskValue;
-    finalColor = mix(color, finalColor, uOpacity);
+    finalColor = mix(vec4(baseColor.rgb, 1.0f), finalColor, uOpacity);
   }
 
   if(edgeColor.a > 0.0f && uBorder) {
